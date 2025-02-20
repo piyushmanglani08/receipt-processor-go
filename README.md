@@ -6,15 +6,6 @@ A webservice implementation using in-memory data storage, Dockerized for easy de
 
 ---
 
-## 👾 Features
-
-|      | Feature         | Summary       |
-| :--- | :---:           | :---          |
-| ⚙️  | **Architecture**  | <ul><li>Implements a **RESTful API** using the **Gorilla Mux** router for HTTP request handling</li><li>Follows a **layered architecture** with distinct packages for handlers, models, storage, and utilities</li><li>Includes optional **logging middleware** for detailed request logging, controlled via command-line flags</li></ul> |
-| 🔩 | **Code Quality**  | <ul><li>Manages dependencies with a `go.mod` file, ensuring consistent builds</li><li>Incorporates unit and integration tests in `main_test.go` to validate business logic and API endpoints</li><li>Adheres to Go best practices, including proper error handling and code readability</li></ul> |
-
----
-
 ## 📁 Project Structure
 
 ```sh
@@ -27,6 +18,7 @@ A webservice implementation using in-memory data storage, Dockerized for easy de
     ├── storage
     │     └── store.go
     ├── utils
+    │     ├── response.go
     │     └── points.go
     ├── Dockerfile
     ├── .gitignore
@@ -34,7 +26,6 @@ A webservice implementation using in-memory data storage, Dockerized for easy de
     ├── go.mod
     ├── go.sum
     ├── main.go
-    └── main_test.go
 ```
 
 ## 🚀 Getting Started
@@ -82,10 +73,7 @@ Install docker-gs-ping using one of the following methods:
 
 ```
 
-
-
-
-### 🤖 Usage
+### 🤖 Running the application
 Run receipt-processor-gog using the following command:
 **Using `go modules`** &nbsp; [<img align="center" src="https://img.shields.io/badge/Go-00ADD8.svg?style={badge_style}&logo=go&logoColor=white" />](https://golang.org/)
 
@@ -97,14 +85,50 @@ Run receipt-processor-gog using the following command:
 **Using `docker`** &nbsp; [<img align="center" src="https://img.shields.io/badge/Docker-2CA5E0.svg?style={badge_style}&logo=docker&logoColor=white" />](https://www.docker.com/)
 
 ```sh
-❯ docker run -it receipt-processor-go
+❯ docker run -p 8080:8080 -it receipt-processor-go
 ```
 
 
-### 🧪 Testing
-Run the test suite using the following command:
-**Using `go modules`** &nbsp; [<img align="center" src="https://img.shields.io/badge/Go-00ADD8.svg?style={badge_style}&logo=go&logoColor=white" />](https://golang.org/)
+### 🧪 Testing API Usage
 
+You can test the API using **cURL** or **Postman**.
+
+### 1️⃣ Process a Receipt
+#### **Endpoint:** `POST /receipts/process`
+#### **Request:**
 ```sh
-❯ go test ./...
+curl -X POST "http://localhost:8080/receipts/process" \
+     -H "Content-Type: application/json" \
+     -d '{
+          "retailer": "Target",
+          "purchaseDate": "2022-01-01",
+          "purchaseTime": "13:01",
+          "total": "35.35",
+          "items": [
+              { "shortDescription": "Mountain Dew 12PK", "price": "6.49" },
+              { "shortDescription": "Emils Cheese Pizza", "price": "12.25" },
+              { "shortDescription": "Knorr Creamy Chicken", "price": "1.26" },
+              { "shortDescription": "Doritos Nacho Cheese", "price": "3.35" },
+              { "shortDescription": "   Klarbrunn 12-PK 12 FL OZ  ", "price": "12.00" }
+          ]
+      }'
+```
+#### **Response:**
+```json
+{
+    "id": "674d7acc-9eb7-52b9-85c3-4384c200bcbe"
+}
+```
+
+### 2️⃣ Retrieve Points for a Receipt
+#### **Endpoint:** `GET /receipts/{id}/points`
+#### **Request:**
+```sh
+curl -X GET "http://localhost:8080/receipts/674d7acc-9eb7-52b9-85c3-4384c200bcbe/points"
+```
+#### **Response:**
+```json
+{
+    "points": 28
+}
 ```
