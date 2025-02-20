@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"log"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
