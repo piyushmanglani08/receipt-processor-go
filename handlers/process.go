@@ -2,34 +2,48 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 
 	"github.com/google/uuid"
-	"receipt-processor/models"
-	"receipt-processor/storage"
-	"receipt-processor/utils"
+	"receipt-processor-go/models"
+	"receipt-processor-go/storage"
+	"receipt-processor-go/utils"
 )
 
-
+// ProcessReceipt decodes a receipt, validates it, calculates its points, and stores the result.
 func ProcessReceipt(w http.ResponseWriter, r *http.Request) {
-	var receipt models.Receipt
+	// Read the raw body for deterministic ID generation.
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading receipt body: %v", err)
+		utils.WriteError(w, "The receipt is invalid.", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
-	if err := json.NewDecoder(r.Body).Decode(&receipt); err != nil {
+	var receipt models.Receipt
+	if err := json.Unmarshal(body, &receipt); err != nil {
 		log.Printf("Error decoding receipt: %v", err)
-		http.Error(w, "The receipt is invalid.", http.StatusBadRequest)
+		utils.WriteError(w, "The receipt is invalid.", http.StatusBadRequest)
 		return
 	}
 
-	id := uuid.New().String()
+	// Validate receipt fields.
+	if !receipt.Verify() {
+		log.Printf("Receipt verification failed: %+v", receipt)
+		utils.WriteError(w, "The receipt is invalid.", http.StatusBadRequest)
+		return
+	}
 
+	// Generate a deterministic ID using SHA-1.
+	id := uuid.NewSHA1(uuid.Max, body).String()
+
+	// Calculate points.
 	points := utils.CalculatePoints(receipt)
 
+	// Save receipt data.
 	storage.SaveReceipt(id, points)
-
-	response := map[string]string{"id": id}
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
-	}
+	utils.WriteJSON(w, map[string]string{"id": id})
 }

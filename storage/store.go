@@ -2,17 +2,26 @@ package storage
 
 import "sync"
 
-var receipts sync.Map
+type Store struct {
+	mu       sync.RWMutex
+	receipts map[string]int
+}
 
-// SaveReceipt stores receipt points
+var store = &Store{
+	receipts: make(map[string]int),
+}
+
+// SaveReceipt stores receipt points under a given ID.
 func SaveReceipt(id string, points int) {
-    receipts.Store(id, points)
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	store.receipts[id] = points
 }
 
 // GetPoints retrieves receipt points by ID.
 func GetPoints(id string) (int, bool) {
-    if val, ok := receipts.Load(id); ok {
-        return val.(int), true
-    }
-    return 0, false
+	store.mu.RLock()
+	defer store.mu.RUnlock()
+	points, exists := store.receipts[id]
+	return points, exists
 }

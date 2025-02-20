@@ -1,4 +1,4 @@
-module receipt-processor
+module receipt-processor-go
 
 go 1.24
 

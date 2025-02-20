@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"receipt-processor/models"
+	"receipt-processor-go/models"
 )
 
-// CalculatePoints applies receipt scoring rules and returns the total points.
+// CalculatePoints computes points for a receipt based on several rules.
 func CalculatePoints(receipt models.Receipt) int {
 	points := 0
 
@@ -19,7 +19,7 @@ func CalculatePoints(receipt models.Receipt) int {
 	re := regexp.MustCompile(`[a-zA-Z0-9]`)
 	points += len(re.FindAllString(receipt.Retailer, -1))
 
-	// Convert total to float.
+	// Parse total.
 	total, err := strconv.ParseFloat(receipt.Total, 64)
 	if err != nil {
 		log.Printf("Error parsing total (%s): %v", receipt.Total, err)
@@ -39,8 +39,8 @@ func CalculatePoints(receipt models.Receipt) int {
 	// Rule 4: 5 points for every two items.
 	points += (len(receipt.Items) / 2) * 5
 
-	// Rule 5: For each item whose trimmed description length is a multiple of 3,
-	// add points equal to 20% of the item's price, rounded up.
+	// Rule 5: For each item with a trimmed description length that is a multiple of 3,
+	// add points equal to 20% of the item's price (rounded up).
 	for _, item := range receipt.Items {
 		desc := strings.TrimSpace(item.ShortDescription)
 		if len(desc)%3 == 0 {
@@ -54,19 +54,21 @@ func CalculatePoints(receipt models.Receipt) int {
 	}
 
 	// Rule 6: 6 points if the purchase day is odd.
-	purchaseDate, err := time.Parse("2006-01-02", receipt.PurchaseDate)
-	if err != nil {
+	if purchaseDate, err := time.Parse("2006-01-02", receipt.PurchaseDate); err == nil {
+		if purchaseDate.Day()%2 == 1 {
+			points += 6
+		}
+	} else {
 		log.Printf("Error parsing purchase date (%s): %v", receipt.PurchaseDate, err)
-	} else if purchaseDate.Day()%2 == 1 {
-		points += 6
 	}
 
 	// Rule 7: 10 points if the purchase time is between 2:00 PM and 4:00 PM.
-	purchaseTime, err := time.Parse("15:04", receipt.PurchaseTime)
-	if err != nil {
+	if purchaseTime, err := time.Parse("15:04", receipt.PurchaseTime); err == nil {
+		if purchaseTime.Hour() >= 14 && purchaseTime.Hour() < 16 {
+			points += 10
+		}
+	} else {
 		log.Printf("Error parsing purchase time (%s): %v", receipt.PurchaseTime, err)
-	} else if purchaseTime.Hour() >= 14 && purchaseTime.Hour() < 16 {
-		points += 10
 	}
 
 	return points
