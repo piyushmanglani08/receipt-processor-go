@@ -12,9 +12,8 @@ import (
 	"receipt-processor-go/utils"
 )
 
-// ProcessReceipt decodes a receipt, validates it, calculates its points, and stores the result.
+// checks if recipt is good to be sent for calculation of points 
 func ProcessReceipt(w http.ResponseWriter, r *http.Request) {
-	// Read the raw body for deterministic ID generation.
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading receipt body: %v", err)
@@ -30,20 +29,17 @@ func ProcessReceipt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate receipt fields.
+
 	if !receipt.Verify() {
 		log.Printf("Receipt verification failed: %+v", receipt)
 		utils.WriteError(w, "The receipt is invalid.", http.StatusBadRequest)
 		return
 	}
 
-	// Generate a deterministic ID using SHA-1.
 	id := uuid.NewSHA1(uuid.Max, body).String()
 
-	// Calculate points.
 	points := utils.CalculatePoints(receipt)
 
-	// Save receipt data.
 	storage.SaveReceipt(id, points)
 	utils.WriteJSON(w, map[string]string{"id": id})
 }

@@ -9,16 +9,20 @@ import (
 	"receipt-processor-go/utils"
 )
 
-// GetPoints retrieves the points for a given receipt ID.
+// getting points for a given id
 func GetPoints(w http.ResponseWriter, r *http.Request) {
-	id := mux.Vars(r)["id"]
-	points, exists := storage.GetPoints(id)
-	if !exists {
-		utils.WriteError(w, "No receipt found for that ID", http.StatusNotFound)
-		return
-	}
 
-	if err := utils.WriteJSON(w, map[string]int{"points": points}); err != nil {
-		log.Printf("Failed to encode response for receipt ID %s: %v", id, err)
-	}
+    id := mux.Vars(r)["id"]
+    points, exists := storage.GetPoints(id)
+    if !exists {
+        utils.WriteError(w, fmt.Sprintf("No receipt found for ID: %s", id), http.StatusNotFound)
+        return
+    }
+    
+    response := map[string]int{"points": points}
+    
+    if err := utils.WriteJSON(w, response); err != nil {
+        log.Printf("Error encoding JSON response for receipt ID %s: %v", id, err)
+        utils.WriteError(w, "Internal server error", http.StatusInternalServerError)
+    }
 }

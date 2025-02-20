@@ -19,11 +19,10 @@ func main() {
 	flag.Parse()
 
 	router := mux.NewRouter()
-	// Define routes
 	router.HandleFunc("/receipts/process", handlers.ProcessReceipt).Methods("POST")
 	router.HandleFunc("/receipts/{id}/points", handlers.GetPoints).Methods("GET")
 
-	// Add logging middleware if enabled.
+	//middleware can be enabled using useLogging
 	if useLogging {
 		router.Use(loggingMiddleware)
 	}
@@ -41,7 +40,6 @@ func main() {
 	}
 }
 
-// loggingMiddleware logs method, URL, and request headers.
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var headerDetails []string
